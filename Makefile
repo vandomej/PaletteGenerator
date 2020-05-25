@@ -1,2 +1,2 @@
-test:
-	sbcl --userinit ./.sbclrc --script test.lisp
+PaletteExtractor:
+	sbcl --script PaletteExtractor.lisp
