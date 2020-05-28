@@ -2,8 +2,11 @@
 
 (ql:quickload "opticl-core")
 (ql:quickload "opticl")
+(ql:quickload "lparallel")
 
-(defparameter *difference-tolerance* 100)
+;; (setf lparallel:*kernel* (lparallel:make-kernel 8))
+
+(defparameter *difference-tolerance* 200)
 
 ;; Defining currying for later use
 (declaim (ftype (function (function &rest t) function) curry)
@@ -36,18 +39,17 @@
 
 ;; Apply's {current-pixel} to the running average given by {closest-pixel} in {l}. We need to keep
 ;; a running average for entries in {l} in order to keep the algorithm efficient.
-(defun change-running-average (current-pixel closest-pixel l)
-    (if (and current-pixel closest-pixel l)
-        (let ((average-pixels (find closest-pixel l :key #'first)))
-            (if average-pixels
-                (block nil
-                    (setf (first average-pixels) 
-                        (mapcar #'(lambda (a)
-                            (/ a (+ 1 (second average-pixels)))) 
-                            (mapcar #'+ 
-                                current-pixel
-                                (mapcar (curry #'* (second average-pixels)) (first average-pixels)))))
-                    (incf (second average-pixels)))))))
+(defun change-running-average (current-pixel average-pixel)
+    (if (and current-pixel average-pixel)
+        (block nil
+            (setf (first average-pixel) 
+                (mapcar #'(lambda (a)
+                    (/ a (+ 1 (second average-pixel)))) 
+                    (mapcar #'+ 
+                        current-pixel
+                        (mapcar (curry #'* (second average-pixel)) (first average-pixel)))))
+            (incf (second average-pixel))
+            average-pixel)))
 
 ;; Processes a pixel by determining where it matches in palette-average and changing palette-average.
 (defun process-pixel (current-pixel palette-average)
@@ -58,23 +60,49 @@
                 (not closest-pixel)
                 (> (reduce #'+ (mapcar #'difference current-pixel closest-pixel)) *difference-tolerance*))
                 (push (list current-pixel 1) palette-average))
-            (t (change-running-average current-pixel closest-pixel palette-average)))
+            (t 
+                (let ((average-pixel (find closest-pixel palette-average :key #'first)))
+                    (if average-pixel (setf average-pixel (change-running-average current-pixel average-pixel))))))
         palette-average))
 
+;; Sorts 
+(defun write-palette-results (img filename palette-average)
+    (let ((i 0)
+          (j 0))
+        (opticl:with-image-bounds (height width) img 
+            (loop for (color count) in palette-average
+                do (let ((unsigned-color (mapcar #'round color)))
+                    (loop for c below count
+                        do 
+                            ;; (format t "i: ~A < ~A j: ~A < ~A = ~A~%" i height j width unsigned-color)
+                            (if (>= j width) 
+                                (block nil
+                                    (setf j 0)
+                                    (incf i)))
+                            (if (< i height) (setf (opticl:pixel img i j) (values-list unsigned-color)))
+                            (incf j))))))
+    (opticl:write-jpeg-file filename img))
+
 ;; Main loop, loading an image and looping through it pixel by pixel.
-(let ((img (opticl:read-jpeg-file "~/Images/Backgrounds/07-17-16.jpg"))
-      (palette-average (list)))
-    (typecase img
-        (opticl:8-bit-rgb-image
-            (locally
-                (declare (type opticl:8-bit-rgb-image img))
-                (opticl:with-image-bounds (height width) 
-                img (loop for i below height
-                    do (loop for j below width 
-                        do (multiple-value-bind (r g b) (opticl:pixel img i j)
-                                ;; (format t "R: ~D G: ~D B: ~D~%" r g b)
-                                (setf palette-average (process-pixel (list r g b) palette-average)))))
-                    (format t "~A: ~A~%" palette-average (length palette-average)))))))
+(time
+    (let ((img (opticl:read-jpeg-file "~/Images/Backgrounds/07-17-16.jpg"))
+        (palette-average (list)))
+        (typecase img
+            (opticl:8-bit-rgb-image
+                (locally
+                    (declare (type opticl:8-bit-rgb-image img))
+                    (opticl:with-image-bounds (height width) img 
+                    (loop for i below height
+                        ;; do (dotimes (j width t)
+                        do (loop for j below width 
+                            do (multiple-value-bind (r g b) (opticl:pixel img i j)
+                                    (declare (type (unsigned-byte 8) r g b))
+                                    ;; (format t "R: ~D G: ~D B: ~D~%" r g b)
+                                    (setf palette-average (process-pixel (list r g b) palette-average)))))
+                    (format t "~A: ~A~%~%" palette-average (length palette-average))
+                    (write-palette-results img "./inv-image.jpeg" (sort palette-average #'> :key #'second))))))))
 
 ;; Writing the img object back into a file
 ;;   (opticl:write-jpeg-file "./inv-image.jpeg" img)
+
+;; (lparallel:end-kernel :wait t)
