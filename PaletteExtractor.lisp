@@ -85,7 +85,7 @@
 
 ;; Main loop, loading an image and looping through it pixel by pixel.
 (time
-    (let ((img (opticl:read-jpeg-file "~/Images/Backgrounds/07-17-16.jpg"))
+    (let ((img (opticl:read-jpeg-file "./Images/image.jpg"))
         (palette-average (list)))
         (typecase img
             (opticl:8-bit-rgb-image
@@ -100,7 +100,7 @@
                                     ;; (format t "R: ~D G: ~D B: ~D~%" r g b)
                                     (setf palette-average (process-pixel (list r g b) palette-average)))))
                     (format t "~A: ~A~%~%" palette-average (length palette-average))
-                    (write-palette-results img "./inv-image.jpeg" (sort palette-average #'> :key #'second))))))))
+                    (write-palette-results img "./Images/inv-image.jpeg" (sort palette-average #'> :key #'second))))))))
 
 ;; Writing the img object back into a file
 ;;   (opticl:write-jpeg-file "./inv-image.jpeg" img)
