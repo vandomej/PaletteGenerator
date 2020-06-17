@@ -3,10 +3,13 @@
 (ql:quickload "opticl-core")
 (ql:quickload "opticl")
 (ql:quickload "lparallel")
+(ql:quickload "bordeaux_threads")
 
 ;; (setf lparallel:*kernel* (lparallel:make-kernel 8))
 
 (defparameter *difference-tolerance* 200)
+
+(defparameter *dirs* nil)
 
 ;; Defining currying for later use
 (declaim (ftype (function (function &rest t) function) curry)
@@ -83,26 +86,63 @@
                             (incf j))))))
     (opticl:write-jpeg-file filename img))
 
-;; Main loop, loading an image and looping through it pixel by pixel.
-(time
-    (let ((img (opticl:read-jpeg-file "./Images/image.jpg"))
-        (palette-average (list)))
-        (typecase img
-            (opticl:8-bit-rgb-image
-                (locally
-                    (declare (type opticl:8-bit-rgb-image img))
-                    (opticl:with-image-bounds (height width) img 
-                    (loop for i below height
-                        ;; do (dotimes (j width t)
-                        do (loop for j below width 
-                            do (multiple-value-bind (r g b) (opticl:pixel img i j)
-                                    (declare (type (unsigned-byte 8) r g b))
-                                    ;; (format t "R: ~D G: ~D B: ~D~%" r g b)
-                                    (setf palette-average (process-pixel (list r g b) palette-average)))))
-                    (format t "~A: ~A~%~%" palette-average (length palette-average))
-                    (write-palette-results img "./Images/inv-image.jpeg" (sort palette-average #'> :key #'second))))))))
+(defun extract-palette (file-name)
+    (let ((palette-name (format nil "~A~A" "./palettes/" (file-namestring file-name))))
+                    (format t "~A -> ~A~%" file-name palette-name)
+                    (ignore-errors
+                        (time
+                            (let ((img (opticl:read-jpeg-file file-name))
+                                (palette-average (list)))
+                                (typecase img
+                                    (opticl:8-bit-rgb-image
+                                        (locally
+                                            (declare (type opticl:8-bit-rgb-image img))
+                                            (opticl:with-image-bounds (height width) img 
+                                            (loop for i below height
+                                                ;; do (dotimes (j width t)
+                                                do (loop for j below width 
+                                                    do (multiple-value-bind (r g b) (opticl:pixel img i j)
+                                                            (declare (type (unsigned-byte 8) r g b))
+                                                            ;; (format t "R: ~D G: ~D B: ~D~%" r g b)
+                                                            (setf palette-average (process-pixel (list r g b) palette-average)))))
+                                            ;; (format t "~A: ~A~%~%" palette-average (length palette-average))
+                                            (write-palette-results img palette-name (sort palette-average #'> :key #'second)))))))))))
 
-;; Writing the img object back into a file
-;;   (opticl:write-jpeg-file "./inv-image.jpeg" img)
+(defun test (file-name)
+    (format t "Reading from ~A~%" file-name)
+    (sleep 10)
+    (format t "Writing to ~A~%" file-name))
+
+;; Main loop, loading an image and looping through it pixel by pixel.
+(uiop:collect-sub*directories "images/"
+    (constantly t)
+    (constantly t)
+    (lambda (dir) 
+        (loop for file-name in (uiop:directory-files dir)
+            do (push file-name *dirs*))))
+
+(uiop:ensure-all-directories-exist (list "./palettes/"))
+
+(time
+    (loop for file-name in *dirs*
+        do (test file-name)))
+
+;; (time
+;;     (let ((img (opticl:read-jpeg-file "./Images/image.jpg"))
+;;         (palette-average (list)))
+;;         (typecase img
+;;             (opticl:8-bit-rgb-image
+;;                 (locally
+;;                     (declare (type opticl:8-bit-rgb-image img))
+;;                     (opticl:with-image-bounds (height width) img 
+;;                     (loop for i below height
+;;                         ;; do (dotimes (j width t)
+;;                         do (loop for j below width 
+;;                             do (multiple-value-bind (r g b) (opticl:pixel img i j)
+;;                                     (declare (type (unsigned-byte 8) r g b))
+;;                                     ;; (format t "R: ~D G: ~D B: ~D~%" r g b)
+;;                                     (setf palette-average (process-pixel (list r g b) palette-average)))))
+;;                     (format t "~A: ~A~%~%" palette-average (length palette-average))
+;;                     (write-palette-results img "./Images/inv-image.jpeg" (sort palette-average #'> :key #'second))))))))
 
 ;; (lparallel:end-kernel :wait t)
