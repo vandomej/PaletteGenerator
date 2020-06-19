@@ -9,6 +9,8 @@
 ;; them to be grouped together
 (defconstant +difference-tolerance+ 100)
 (defconstant +number-of-threads+ 8)
+(defconstant +image-directory+ "./images/")
+(defconstant +palette-directory+ "./palettes")
 
 ;; File names for images
 (defparameter *image-files* nil)
@@ -71,7 +73,7 @@
                     (if average-pixel (setf average-pixel (change-running-average current-pixel average-pixel))))))
         palette-average))
 
-;; Uses the color palette in {palette-average} to write a 
+;; Uses the color palette in {palette-average} to generate an image representation of the palette
 (defun write-palette-results (img filename palette-average)
     (let ((i 0)
           (j 0))
@@ -89,8 +91,9 @@
                         (incf j))))))
     (opticl:write-jpeg-file filename img))
 
+;; Given a file name, the function will extract the color palette, and generate an image to the "palettes" folder
 (defun extract-palette (file-name)
-    (let ((palette-name (format nil "~A~A" "./palettes/" (file-namestring file-name))))
+    (let ((palette-name (format nil "~A~A" +palette-directory+ (file-namestring file-name))))
         (format t "~A -> ~A~%" file-name palette-name)
         (ignore-errors
             (time
@@ -111,6 +114,8 @@
                                 ;; (format t "~A: ~A~%~%" palette-average (length palette-average))
                                 (write-palette-results img palette-name (sort palette-average #'> :key #'second)))))))))))
 
+;; Pushes {thread} onto {thread-list} up to {+number-of-threads+}. If {thread-list} has {+number-of-threads+} elements
+;; the function will pop the last element off of the list, waiting for the thread to finish, before pushing the thread.
 (defun push-thread (thread thread-list)
     (if (< (length thread-list) +number-of-threads+)
         (append thread-list (list thread))
@@ -119,16 +124,22 @@
             (pop thread-list)
             (append thread-list (list thread)))))
 
-;; Main loop, loading an image and looping through it pixel by pixel.
-(uiop:collect-sub*directories "images/"
+;; Collecting a list of file names under the "images" directory
+(uiop:collect-sub*directories +image-directory+
     (constantly t)
     (constantly t)
     (lambda (dir) 
         (loop for file-name in (uiop:directory-files dir)
             do (push file-name *image-files*))))
 
-(uiop:ensure-all-directories-exist (list "./palettes/"))
+;; Creates the palette directory where the resulting color palette images will be written
+(uiop:ensure-all-directories-exist (list +palette-directory+))
 
+;; Main loop of program
 (time
     (loop for file-name in *image-files*
-        do (setf *threads* (push-thread (bordeaux-threads:make-thread (lambda () (extract-palette file-name))) *threads*))))
+        do (setf *threads* 
+            (push-thread 
+                (bordeaux-threads:make-thread 
+                    (lambda () (extract-palette file-name))) 
+                *threads*))))
