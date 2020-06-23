@@ -1,20 +1,22 @@
 (load "~/.sbclrc")
 
-(ql:quickload "opticl-core")
-(ql:quickload "opticl")
-(ql:quickload "lparallel")
-(ql:quickload "bordeaux-threads")
+(ql:quickload :opticl-core)
+(ql:quickload :opticl)
+(ql:quickload :bordeaux-threads)
+(ql:quickload :jonathan)
 
 ;; The difference tolerance is the maximum difference allowed between two pixels in rgb value for 
 ;; them to be grouped together
-(defconstant +difference-tolerance+ 100)
+(defconstant +difference-tolerance+ 200)
 (defconstant +number-of-threads+ 8)
 (defconstant +image-directory+ "./images/")
-(defconstant +palette-directory+ "./palettes")
+(defconstant +palette-directory+ "./palettes/")
+(defconstant +output-file+ "./data.json")
 
 ;; File names for images
 (defparameter *image-files* nil)
 (defparameter *threads* (list))
+(defparameter *palette-dataset* (list))
 
 ;; Defining currying for later use
 (declaim (ftype (function (function &rest t) function) curry)
@@ -112,7 +114,9 @@
                                             ;; (format t "R: ~D G: ~D B: ~D~%" r g b)
                                             (setf palette-average (process-pixel (list r g b) palette-average)))))
                                 ;; (format t "~A: ~A~%~%" palette-average (length palette-average))
-                                (write-palette-results img palette-name (sort palette-average #'> :key #'second)))))))))))
+                                (let ((sorted-palette-average (sort palette-average #'> :key #'second)))
+                                    (push sorted-palette-average *palette-dataset*)
+                                    (write-palette-results img palette-name sorted-palette-average)))))))))))
 
 ;; Pushes {thread} onto {thread-list} up to {+number-of-threads+}. If {thread-list} has {+number-of-threads+} elements
 ;; the function will pop the last element off of the list, waiting for the thread to finish, before pushing the thread.
@@ -120,7 +124,7 @@
     (if (< (length thread-list) +number-of-threads+)
         (append thread-list (list thread))
         (block nil
-            (bordeaux-threads:join-thread (first thread-list))
+            (bt:join-thread (first thread-list))
             (pop thread-list)
             (append thread-list (list thread)))))
 
@@ -137,9 +141,15 @@
 
 ;; Main loop of program
 (time
-    (loop for file-name in *image-files*
-        do (setf *threads* 
-            (push-thread 
-                (bordeaux-threads:make-thread 
-                    (lambda () (extract-palette file-name))) 
-                *threads*))))
+    (let ((output-file (open +output-file+ :direction :output :if-exists :supersede)))
+        (loop for file-name in *image-files*
+            do (setf *threads* 
+                (push-thread 
+                    (bt:make-thread 
+                        (lambda () (extract-palette file-name))) 
+                    *threads*)))
+        (loop for thread in *threads*
+            do (bt:join-thread thread))
+        ;; (format t "~A~%" (jonathan:to-json *palette-dataset*))))
+        (write-string (jonathan:to-json *palette-dataset*) output-file)
+        (close output-file)))
