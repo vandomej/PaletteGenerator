@@ -116,17 +116,21 @@
                                 ;; (format t "~A: ~A~%~%" palette-average (length palette-average))
                                 (let ((sorted-palette-average (sort palette-average #'> :key #'second)))
                                     (push sorted-palette-average *palette-dataset*)
-                                    (write-palette-results img palette-name sorted-palette-average)))))))))))
+                                    ;; (write-palette-results img palette-name sorted-palette-average)
+                                    ))))))))))
 
 ;; Pushes {thread} onto {thread-list} up to {+number-of-threads+}. If {thread-list} has {+number-of-threads+} elements
 ;; the function will pop the last element off of the list, waiting for the thread to finish, before pushing the thread.
 (defun push-thread (thread thread-list)
     (if (< (length thread-list) +number-of-threads+)
-        (append thread-list (list thread))
+        (push thread thread-list)
         (block nil
-            (bt:join-thread (first thread-list))
-            (pop thread-list)
-            (append thread-list (list thread)))))
+            ;; (format t "~A -> ~A~%" thread-list (mapcar #'sb-thread:thread-alive-p thread-list))
+            (loop while (every (lambda (tr) (sb-thread:thread-alive-p tr)) thread-list)
+                do (sleep 0.5))
+            (let ((completed-thread (find-if (lambda (tr) (not (sb-thread:thread-alive-p tr))) thread-list)))
+                (bt:join-thread completed-thread)
+                (nsubstitute thread completed-thread thread-list)))))
 
 ;; Collecting a list of file names under the "images" directory
 (uiop:collect-sub*directories +image-directory+
@@ -141,7 +145,7 @@
 
 ;; Main loop of program
 (time
-    (let ((output-file (open +output-file+ :direction :output :if-exists :supersede)))
+    (block nil
         (loop for file-name in *image-files*
             do (setf *threads* 
                 (push-thread 
@@ -151,5 +155,6 @@
         (loop for thread in *threads*
             do (bt:join-thread thread))
         ;; (format t "~A~%" (jonathan:to-json *palette-dataset*))))
-        (write-string (jonathan:to-json *palette-dataset*) output-file)
-        (close output-file)))
+        (let ((output-file (open +output-file+ :direction :output :if-exists :supersede)))
+            (write-string (jonathan:to-json *palette-dataset*) output-file)
+            (close output-file))))
