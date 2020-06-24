@@ -40,11 +40,11 @@
         (slot-value object 'count)))
 
 (defmethod json:encode-json ((object color-average) &optional stream)
-    (format stream "{\"r\":~A,\"g\":~A,\"b\":~A,\"count\":~A}"
-        (slot-value object 'r)
-        (slot-value object 'g)
-        (slot-value object 'b)
-        (slot-value object 'count)))
+    (json:with-object (stream)
+        (json:encode-object-member "r" (slot-value object 'r) stream)
+        (json:encode-object-member "g" (slot-value object 'g) stream)
+        (json:encode-object-member "b" (slot-value object 'b) stream)
+        (json:encode-object-member "count" (slot-value object 'count) stream)))
 
 ;; (defparameter *test* (list
 ;;     (list (make-instance 'color-average :r 10.0 :g 9.0 :b 8.0 :count 10)
@@ -198,7 +198,7 @@
                     *threads*)))
         (loop for thread in *threads*
             do (bt:join-thread thread))
-        ;; (format t "~A~%" (jonathan:to-json *palette-dataset*))))
+        ;; (format t "~A~%" (json:encode-json *palette-dataset*))
         (let ((output-file (open +output-file+ :direction :output :if-exists :supersede)))
-            (write-string (jonathan:to-json *palette-dataset*) output-file)
+            (json:encode-json *palette-dataset* output-file)
             (close output-file))))
