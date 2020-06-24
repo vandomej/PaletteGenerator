@@ -18,6 +18,20 @@
 (defparameter *threads* (list))
 (defparameter *palette-dataset* (list))
 
+(defclass color-average ()
+    ((r
+        :initarg :r
+        :initform (error "Must supply r"))
+    (g
+        :initarg :g
+        :initform (error "Must supply g"))
+    (b
+        :initarg :b
+        :initform (error "Must supply b"))
+    (count
+        :initarg :count
+        :initform 1)))
+
 ;; Defining currying for later use
 (declaim (ftype (function (function &rest t) function) curry)
     (inline curry))
@@ -29,7 +43,10 @@
 ;; shortcut to map the difference between two lists.
 (defun difference (a b) 
     ;; (format t "difference ~A ~A ~%" a b)
-    (abs (- a b)))
+    (+
+        (abs (- (slot-value a 'r) (slot-value b 'r)))
+        (abs (- (slot-value a 'g) (slot-value b 'g)))
+        (abs (- (slot-value a 'b) (slot-value b 'b)))))
 
 ;; Gets the value in list {l} that is closest to {value}. We need the closest value to determine 
 ;; which item we need to apply {value} to.
@@ -40,39 +57,42 @@
             (loop for i in l
                 do 
                 ;; (format t "i: ~A~%" i)
-                (let ((temp-difference (reduce #'+ (mapcar #'difference value (first i)))))
+                (let ((temp-difference (difference value i)))
                     (cond ((or (not closest-val)
                             (< temp-difference closest-difference)) 
-                                (setf closest-val (first i))
+                                (setf closest-val i)
                                 (setf closest-difference temp-difference)))))
             closest-val)))
 
-;; Apply's {current-pixel} to the running average given by {average-pixel}. We need to keep
+;; Apply's {current-pixel} to the running average given by {average-color}. We need to keep
 ;; a running average for entries in order to keep the algorithm efficient.
-(defun change-running-average (current-pixel average-pixel)
-    (if (and current-pixel average-pixel)
+(defun change-running-average (current-pixel average-color)
+    (if (and current-pixel average-color)
         (block nil
-            (setf (first average-pixel) 
-                (mapcar #'(lambda (a)
-                    (/ a (+ 1 (second average-pixel)))) 
-                    (mapcar #'+ 
-                        current-pixel
-                        (mapcar (curry #'* (second average-pixel)) (first average-pixel)))))
-            (incf (second average-pixel))
-            average-pixel)))
+            (setf (slot-value average-color 'r)
+                (/ (+ (slot-value current-pixel 'r) 
+                        (* (slot-value average-color 'r) (slot-value average-color 'count)))
+                    (1+ (slot-value average-color 'count))))
+            (setf (slot-value average-color 'g)
+                (/ (+ (slot-value current-pixel 'g) 
+                        (* (slot-value average-color 'g) (slot-value average-color 'count)))
+                    (1+ (slot-value average-color 'count))))
+            (setf (slot-value average-color 'b)
+                (/ (+ (slot-value current-pixel 'b) 
+                        (* (slot-value average-color 'b) (slot-value average-color 'count)))
+                    (1+ (slot-value average-color 'count))))
+            (incf (slot-value average-color 'count)))))
 
 ;; Processes a pixel by determining where it matches in palette-average and changing palette-average.
 (defun process-pixel (current-pixel palette-average)
     (let* ((closest-pixel (closest current-pixel palette-average)))
-        ;; (format t "~A < ~A?~%" (reduce #'+ (mapcar #'difference closestcurrent-pixel closest-pixel)) +difference-tolerance+)
+        ;; (format t "~A -> ~A?~%" current-pixel palette-average)
         (cond 
-            ((or 
-                (not closest-pixel)
-                (> (reduce #'+ (mapcar #'difference current-pixel closest-pixel)) +difference-tolerance+))
-                (push (list current-pixel 1) palette-average))
-            (t 
-                (let ((average-pixel (find closest-pixel palette-average :key #'first)))
-                    (if average-pixel (setf average-pixel (change-running-average current-pixel average-pixel))))))
+            ((or (not closest-pixel)
+                    (> (difference current-pixel closest-pixel) +difference-tolerance+))
+             (push current-pixel palette-average))
+            (t (let ((average-color (find closest-pixel palette-average)))
+                (if average-color (change-running-average current-pixel average-color)))))
         palette-average))
 
 ;; Uses the color palette in {palette-average} to generate an image representation of the palette
@@ -80,44 +100,43 @@
     (let ((i 0)
           (j 0))
         (opticl:with-image-bounds (height width) img 
-            (loop for (color count) in palette-average
-                do (let ((unsigned-color (mapcar #'round color)))
-                    (loop for c below count
-                        do 
-                        ;; (format t "i: ~A < ~A j: ~A < ~A = ~A~%" i height j width unsigned-color)
-                        (if (>= j width) 
-                            (block nil
-                                (setf j 0)
-                                (incf i)))
-                        (if (< i height) (setf (opticl:pixel img i j) (values-list unsigned-color)))
-                        (incf j))))))
+            (loop for color-average in palette-average
+                do (let ((r (round (slot-value color-average 'r)))
+                        (g (round (slot-value color-average 'g)))
+                        (b (round (slot-value color-average 'b))))
+                        (loop for c below (slot-value color-average 'count)
+                            do 
+                            ;; (format t "i: ~A < ~A j: ~A < ~A = ~A~%" i height j width unsigned-color)
+                            (if (>= j width) 
+                                (block nil
+                                    (setf j 0)
+                                    (incf i)))
+                            (if (< i height) (setf (opticl:pixel img i j) (values r g b)))
+                            (incf j))))))
     (opticl:write-jpeg-file filename img))
 
 ;; Given a file name, the function will extract the color palette, and generate an image to the "palettes" folder
 (defun extract-palette (file-name)
     (let ((palette-name (format nil "~A~A" +palette-directory+ (file-namestring file-name))))
         (format t "~A -> ~A~%" file-name palette-name)
-        (ignore-errors
-            (time
-                (let ((img (opticl:read-jpeg-file file-name))
-                    (palette-average (list)))
-                    (typecase img
-                        (opticl:8-bit-rgb-image
-                            (locally
-                                (declare (type opticl:8-bit-rgb-image img))
-                                (opticl:with-image-bounds (height width) img 
-                                (loop for i below height
-                                    ;; do (dotimes (j width t)
-                                    do (loop for j below width 
-                                        do (multiple-value-bind (r g b) (opticl:pixel img i j)
-                                            (declare (type (unsigned-byte 8) r g b))
-                                            ;; (format t "R: ~D G: ~D B: ~D~%" r g b)
-                                            (setf palette-average (process-pixel (list r g b) palette-average)))))
-                                ;; (format t "~A: ~A~%~%" palette-average (length palette-average))
-                                (let ((sorted-palette-average (sort palette-average #'> :key #'second)))
-                                    (push sorted-palette-average *palette-dataset*)
-                                    ;; (write-palette-results img palette-name sorted-palette-average)
-                                    ))))))))))
+        (ignore-errors (time (let ((img (opticl:read-jpeg-file file-name))
+            (palette-average (list)))
+            (typecase img
+                (opticl:8-bit-rgb-image
+                    (locally
+                        (declare (type opticl:8-bit-rgb-image img))
+                        (opticl:with-image-bounds (height width) img 
+                        (loop for i below height
+                            ;; do (dotimes (j width t)
+                            do (loop for j below width 
+                                do (multiple-value-bind (r g b) (opticl:pixel img i j)
+                                    (declare (type (unsigned-byte 8) r g b))
+                                    ;; (format t "R: ~D G: ~D B: ~D~%" r g b)
+                                    (setf palette-average (process-pixel (make-instance 'color-average :r r :g g :b b) palette-average)))))
+                        ;; (format t "~A: ~A~%~%" palette-average (length palette-average))
+                        (let ((sorted-palette-average (sort palette-average #'> :key (lambda (pa) (slot-value pa 'count)))))
+                            (push sorted-palette-average *palette-dataset*)
+                            (write-palette-results img palette-name sorted-palette-average)))))))))))
 
 ;; Pushes {thread} onto {thread-list} up to {+number-of-threads+}. If {thread-list} has {+number-of-threads+} elements
 ;; the function will pop the last element off of the list, waiting for the thread to finish, before pushing the thread.
