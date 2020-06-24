@@ -32,6 +32,13 @@
         :initarg :count
         :initform 1)))
 
+(defmethod print-object ((object color-average) stream)
+    (format stream "(r:~A g:~A b:~A | ~A)"
+        (slot-value object 'r)
+        (slot-value object 'g)
+        (slot-value object 'b)
+        (slot-value object 'count)))
+
 ;; Defining currying for later use
 (declaim (ftype (function (function &rest t) function) curry)
     (inline curry))
