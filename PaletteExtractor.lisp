@@ -3,7 +3,7 @@
 (ql:quickload :opticl-core)
 (ql:quickload :opticl)
 (ql:quickload :bordeaux-threads)
-(ql:quickload :jonathan)
+(ql:quickload :cl-json)
 
 ;; The difference tolerance is the maximum difference allowed between two pixels in rgb value for 
 ;; them to be grouped together
@@ -38,6 +38,24 @@
         (slot-value object 'g)
         (slot-value object 'b)
         (slot-value object 'count)))
+
+(defmethod json:encode-json ((object color-average) &optional stream)
+    (format stream "{\"r\":~A,\"g\":~A,\"b\":~A,\"count\":~A}"
+        (slot-value object 'r)
+        (slot-value object 'g)
+        (slot-value object 'b)
+        (slot-value object 'count)))
+
+;; (defparameter *test* (list
+;;     (list (make-instance 'color-average :r 10.0 :g 9.0 :b 8.0 :count 10)
+;;         (make-instance 'color-average :r 7.5 :g 6.3 :b 243.76 :count 4)
+;;         (make-instance 'color-average :r 11.0 :g 11.0 :b 11.0 :count 17))
+;;     (list (make-instance 'color-average :r 1.0 :g 7.0 :b 13.0 :count 1)
+;;         (make-instance 'color-average :r 2.0 :g 8.0 :b 14.0 :count 2)
+;;         (make-instance 'color-average :r 3.0 :g 9.0 :b 15.0 :count 3))
+;;     (list (make-instance 'color-average :r 4.0 :g 10.0 :b 16.0 :count 4)
+;;         (make-instance 'color-average :r 5.0 :g 11.0 :b 17.0 :count 5)
+;;         (make-instance 'color-average :r 6.0 :g 12.0 :b 18.0 :count 6))))
 
 ;; Defining currying for later use
 (declaim (ftype (function (function &rest t) function) curry)
