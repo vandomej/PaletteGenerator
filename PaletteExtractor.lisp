@@ -187,6 +187,8 @@
 ;; Creates the palette directory where the resulting color palette images will be written
 (uiop:ensure-all-directories-exist (list +palette-directory+))
 
+(setf *image-files* (delete-duplicates *image-files*))
+
 ;; Main loop of program
 (time
     (block nil
