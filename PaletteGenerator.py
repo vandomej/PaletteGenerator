@@ -3,11 +3,11 @@ import matplotlib.pyplot as plt
 import numpy as py
 
 import tensorflow as tf
+import pandas as pd
+import seaborn as sns
 
 from tensorflow import keras
 from tensorflow.keras import layers
-
-print(tf.__version__)
 
 with open('data.json', 'r') as file:
     file_data = file.read()
