@@ -52,6 +52,10 @@ dataset = raw_dataset.copy()
 train_dataset = dataset.sample(frac=0.8, random_state=0)
 test_dataset = dataset.drop(train_dataset.index)
 
+# sns.pairplot(
+#     train_dataset[["primaryr", "primaryg", "primaryb"]], diag_kind="kde")
+# plt.show()
+
 train_stats = train_dataset.describe()
 train_stats = train_stats.drop(
     labels=['secondaryr', 'secondaryg', 'secondaryb', 'tertiaryr', 'tertiaryg', 'tertiaryb', 'quaternaryr', 'quaternaryg', 'quaternaryb'], axis='columns')
@@ -98,9 +102,10 @@ normed_test_labels = norm_labels(test_labels)
 def build_model():
     model = keras.Sequential([
         layers.Dense(64, activation='relu', input_shape=[
-                     len(train_dataset.keys())]),
-        layers.Dense(64, activation='relu'),
-        layers.Dense(len(train_labels.keys()))
+                     len(train_dataset.keys())], use_bias=True),
+        layers.Dense(64 * len(train_labels.keys()),
+                     activation='relu', use_bias=True),
+        layers.Dense(len(train_labels.keys()), use_bias=True)
     ])
 
     model.compile(loss='mse',
@@ -111,13 +116,13 @@ def build_model():
 
 model = build_model()
 
-# model.summary()
+model.summary()
 
 # example_batch = normed_train_data[:10]
 # example_result = model.predict(example_batch)
 # print(example_result)
 
-EPOCHS = 1000
+EPOCHS = 4800
 
 history = model.fit(
     normed_train_data, normed_train_labels,
@@ -129,7 +134,38 @@ hist['epoch'] = history.epoch
 print(hist.tail())
 
 plotter = tfdocs.plots.HistoryPlotter(smoothing_std=2)
-
 plotter.plot({'Basic': history}, metric="mae")
 plt.ylim([0, 10])
 plt.ylabel('MAE [MPG]')
+plt.show()
+
+
+loss, mae, mape = model.evaluate(
+    normed_test_data, normed_test_labels, verbose=2)
+
+print("Testing set Mean Abs Error: {:5.2f}".format(mae))
+print("Testing set MAPE Error: {}".format(mape))
+
+test_predictions = model.predict(normed_test_data).flatten()
+
+
+#
+# Copyright (c) 2017 François Chollet
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
