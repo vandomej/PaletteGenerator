@@ -83,11 +83,11 @@ test_dataset = test_dataset.drop(
 
 
 def norm_data(x):
-    return (x - train_stats['mean']) / train_stats['std']
+    return x / 255
 
 
 def norm_labels(x):
-    return (x - train_label_stats['mean']) / train_label_stats['std']
+    return x / 255
 
 
 normed_train_data = norm_data(train_dataset)
@@ -98,18 +98,51 @@ normed_test_labels = norm_labels(test_labels)
 
 # print(normed_train_labels.tail())
 
+# Model results
+# Layers        | best val_mae
+# 64 | 9            .1537
+# 24 | 9            .1535
+# 16 | 9            .1536
+# 8  | 9            .1548
+# 12 | 9            .1536
+# 10 | 9            .1543
+# 11 | 9            .1547
+# 12 | 12 | 9       .1533
+# 12 | 6 | 9        .1530
+# 12 | 24 | 9       .1534
+# 12 | 9 | 9        .1535
+# 12 | 10 | 9       .1529
+# 24 | 10 | 9       .1533
+# 16 | 10 | 9       .1528
+# 18 | 10 | 9       .1530
+# 16 | 10 | 10 | 9  .1528
+# 16 | 10 | 20 | 9  .1536
+# 16 | 10 | 5 | 9   .1532
+# 16 | 10 | 8 | 9   .1531
+# 16 | 8 | 10 | 9   .1529
+# 16 | 16 | 10 | 9  .1529
+# 24 | 10 | 10 | 9  .1520 !!
+# 24 | 16 | 10 | 9  .1530
+# 24 | 10 | 10 | 9  .1525
+
 
 def build_model():
     model = keras.Sequential([
-        layers.Dense(64, activation='relu', input_shape=[
+        layers.Dense(24, activation='relu', input_shape=[
                      len(train_dataset.keys())], use_bias=True),
-        layers.Dense(64 * len(train_labels.keys()),
-                     activation='relu', use_bias=True),
+        layers.Dense(10, use_bias=True),
+        layers.Dense(10, use_bias=True),
         layers.Dense(len(train_labels.keys()), use_bias=True)
     ])
 
+    lr_schedule = tf.keras.optimizers.schedules.InverseTimeDecay(
+        0.001,
+        decay_steps=(len(normed_train_data) / 32)*1000,
+        decay_rate=1,
+        staircase=False)
+
     model.compile(loss='mse',
-                  optimizer='rmsprop',
+                  optimizer=tf.keras.optimizers.Adam(lr_schedule),
                   metrics=['mae', 'mape'])
     return model
 
@@ -122,12 +155,18 @@ model.summary()
 # example_result = model.predict(example_batch)
 # print(example_result)
 
-EPOCHS = 4800
+
+EPOCHS = 4000
 
 history = model.fit(
     normed_train_data, normed_train_labels,
-    epochs=EPOCHS, validation_split=0.2, verbose=0,
-    callbacks=[tfdocs.modeling.EpochDots()])
+    epochs=EPOCHS, validation_data=(
+        normed_test_data, normed_test_labels), verbose=0,
+    shuffle=True,
+    callbacks=[
+        tfdocs.modeling.EpochDots(),
+        tf.keras.callbacks.EarlyStopping(monitor='val_mae', patience=100),
+    ])
 
 hist = pd.DataFrame(history.history)
 hist['epoch'] = history.epoch
