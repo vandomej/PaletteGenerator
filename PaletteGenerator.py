@@ -142,7 +142,8 @@ def build_model():
         staircase=False)
 
     model.compile(loss='mse',
-                  optimizer=tf.keras.optimizers.Adam(lr_schedule),
+                  # tf.keras.optimizers.RMSprop(lr_schedule),
+                  optimizer='rmsprop',
                   metrics=['mae', 'mape'])
     return model
 
@@ -156,7 +157,7 @@ model.summary()
 # print(example_result)
 
 
-EPOCHS = 4000
+EPOCHS = 400
 
 history = model.fit(
     normed_train_data, normed_train_labels,
@@ -165,7 +166,7 @@ history = model.fit(
     shuffle=True,
     callbacks=[
         tfdocs.modeling.EpochDots(),
-        tf.keras.callbacks.EarlyStopping(monitor='val_mae', patience=100),
+        # tf.keras.callbacks.EarlyStopping(monitor='val_mae', patience=100),
     ])
 
 hist = pd.DataFrame(history.history)
@@ -174,9 +175,9 @@ print(hist.tail())
 
 plotter = tfdocs.plots.HistoryPlotter(smoothing_std=2)
 plotter.plot({'Basic': history}, metric="mae")
-plt.ylim([0, 10])
+plt.ylim([0.15, 0.18])
 plt.ylabel('MAE [MPG]')
-plt.show()
+plt.savefig("results.png")
 
 
 loss, mae, mape = model.evaluate(
