@@ -1,3 +1,4 @@
+import os
 import json
 import matplotlib.pyplot as plt
 import numpy as py
@@ -156,6 +157,13 @@ model.summary()
 # example_result = model.predict(example_batch)
 # print(example_result)
 
+checkpoint_path = "models/cp.ckpt"
+checkpoint_dir = os.path.dirname(checkpoint_path)
+
+# Create a callback that saves the model's weights
+cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
+                                                 save_weights_only=True,
+                                                 verbose=1)
 
 EPOCHS = 400
 
@@ -166,7 +174,8 @@ history = model.fit(
     shuffle=True,
     callbacks=[
         tfdocs.modeling.EpochDots(),
-        # tf.keras.callbacks.EarlyStopping(monitor='val_mae', patience=100),
+        tf.keras.callbacks.EarlyStopping(monitor='val_mae', patience=100),
+        cp_callback
     ])
 
 hist = pd.DataFrame(history.history)
@@ -176,7 +185,7 @@ print(hist.tail())
 plotter = tfdocs.plots.HistoryPlotter(smoothing_std=2)
 plotter.plot({'Basic': history}, metric="mae")
 plt.ylim([0.15, 0.18])
-plt.ylabel('MAE [MPG]')
+plt.ylabel('MAE [RGB]')
 plt.savefig("results.png")
 
 
