@@ -163,7 +163,8 @@ checkpoint_dir = os.path.dirname(checkpoint_path)
 # Create a callback that saves the model's weights
 cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
                                                  save_weights_only=True,
-                                                 verbose=1)
+                                                 verbose=1,
+                                                 period=5)
 
 EPOCHS = 400
 
@@ -196,6 +197,8 @@ print("Testing set Mean Abs Error: {:5.2f}".format(mae))
 print("Testing set MAPE Error: {}".format(mape))
 
 test_predictions = model.predict(normed_test_data).flatten()
+
+model.save('models/final.h5')
 
 
 #
