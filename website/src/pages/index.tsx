@@ -3,10 +3,10 @@ import { PageProps } from 'gatsby';
 import * as tf from '@tensorflow/tfjs';
 
 import Title from '@/components/Title';
-import model from '../model/model.json';
+import model from '../../public/model.json';
 
 const Home: React.FC<PageProps> = () => {
-  tf.loadLayersModel(model.toString()).then((m) => {
+  tf.loadLayersModel(model).then((m) => {
     const prediction = m.predict(tf.tensor1d([0.75, 0.5, 0.25], 'float32'));
     console.log(prediction);
   });
