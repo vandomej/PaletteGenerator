@@ -162,9 +162,11 @@ checkpoint_dir = os.path.dirname(checkpoint_path)
 
 # Create a callback that saves the model's weights
 cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
-                                                 save_weights_only=True,
                                                  verbose=1,
-                                                 period=5)
+                                                 save_best_only=True,
+                                                 mode='min',
+                                                 monitor='val_mape',
+                                                 save_freq='epoch')
 
 EPOCHS = 400
 
@@ -175,7 +177,7 @@ history = model.fit(
     shuffle=True,
     callbacks=[
         tfdocs.modeling.EpochDots(),
-        tf.keras.callbacks.EarlyStopping(monitor='val_mae', patience=100),
+        tf.keras.callbacks.EarlyStopping(monitor='val_mape', patience=100),
         cp_callback
     ])
 
@@ -198,8 +200,11 @@ print("Testing set MAPE Error: {}".format(mape))
 
 test_predictions = model.predict(normed_test_data).flatten()
 
-model.save('models/final.h5')
+model.save('./models/final.h5', save_format='h5')
 
+del model
+model = tf.keras.models.load_model('./models/final.h5')
+print(model.predict(normed_test_data).flatten())
 
 #
 # Copyright (c) 2017 François Chollet
