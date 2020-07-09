@@ -19,13 +19,6 @@
     "lint": "eslint --ignore-path .gitignore \"src/**/*.+(ts|js|tsx)\"",
     "format": "prettier --ignore-path .gitignore \"src/**/*.+(ts|js|tsx)\" --write"
   },
-  "husky": {
-    "hooks": {
-      "prepare-commit-msg": "exec < /dev/tty && git cz --hook || true",
-      "pre-commit": "lint-staged",
-      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
-    }
-  },
   "lint-staged": {
     "./src/**/*.{ts,js,jsx,tsx}": [
       "yarn lint --fix",
@@ -34,7 +27,7 @@
   },
   "dependencies": {
     "@loadable/component": "^5.13.1",
-    "@tensorflow/tfjs": "^2.0.1",
+    "@tensorflow/tfjs": "^1.7.4",
     "gatsby": "^2.22.5",
     "gatsby-source-filesystem": "^2.3.18",
     "react": "^16.13.1",
@@ -64,10 +57,5 @@
     "lint-staged": "^10.1.2",
     "prettier": "^2.0.4",
     "typescript": "^3.8.3"
-  },
-  "config": {
-    "commitizen": {
-      "path": "./node_modules/cz-conventional-changelog"
-    }
   }
 }

@@ -1,11 +1,33 @@
-import React from 'react';
-import { PageProps } from 'gatsby';
+import React, { useEffect } from 'react';
+import { PageProps, useStaticQuery, graphql } from 'gatsby';
 
-import loadable from '@loadable/component';
-
-const Title = loadable(() => import('../components/Title'));
+import * as tf from '@tensorflow/tfjs';
+import Title from '../components/Title';
 
 const Home: React.FC<PageProps> = () => {
+  const modelFile = useStaticQuery(graphql`
+    {
+      allFile(filter: { name: { eq: "model" } }) {
+        edges {
+          node {
+            name
+            publicURL
+            relativePath
+          }
+        }
+      }
+    }
+  `);
+
+  useEffect(() => {
+    tf.loadLayersModel(modelFile.allFile.edges[0].node.relativePath)
+      .then((m) => {
+        const prediction = m.predict(tf.tensor([[0.75, 0.5, 0.25]]));
+        (prediction as tf.Tensor).print();
+      })
+      .catch((e) => console.log(e));
+  });
+
   return (
     <main>
       <Title />
