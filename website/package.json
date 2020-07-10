@@ -12,7 +12,7 @@
   ],
   "scripts": {
     "start": "gatsby develop",
-    "build": "echo test; npm install; gatsby build; npm run serve",
+    "build": "echo test; ls ../; pwd; npm install; gatsby build",
     "serve": "gatsby serve",
     "clean": "gatsby clean",
     "type-check": "tsc",
