@@ -31,7 +31,7 @@ const ColorPicker: React.FC<{}> = () => {
     if (!model) {
       tf.loadLayersModel(modelFile.allFile.edges[0].node.relativePath)
         .then((m) => {
-          console.log('Setting model');
+          console.log('Setting model ');
           setModel(m);
           //   const prediction = m.predict(tf.tensor([[0.75, 0.5, 0.25]]));
           //   (prediction as tf.Tensor).print();
