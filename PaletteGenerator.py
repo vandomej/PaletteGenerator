@@ -163,6 +163,7 @@ checkpoint_dir = os.path.dirname(checkpoint_path)
 # Create a callback that saves the model's weights
 cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
                                                  verbose=1,
+                                                 save_weights_only=True,
                                                  save_best_only=True,
                                                  mode='min',
                                                  monitor='val_mape',
@@ -192,6 +193,12 @@ plt.ylabel('MAE [RGB]')
 plt.savefig("results.png")
 
 
+# checkpoint = tf.train.Checkpoint(optimizer='rmsprop', model=model)
+# status = checkpoint.restore(tf.train.latest_checkpoint(checkpoint_path))
+
+# tf.train.Checkpoint
+model.load_weights(checkpoint_path)
+
 loss, mae, mape = model.evaluate(
     normed_test_data, normed_test_labels, verbose=2)
 
@@ -204,7 +211,6 @@ model.save('./models/final.h5', save_format='h5')
 
 del model
 model = tf.keras.models.load_model('./models/final.h5')
-print(model.predict(normed_test_data).flatten())
 
 #
 # Copyright (c) 2017 François Chollet
