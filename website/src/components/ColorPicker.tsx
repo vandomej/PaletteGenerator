@@ -57,6 +57,7 @@ const ColorPicker: React.FC<{}> = () => {
               tf.tensor([normalized.map((i) => i / 255)]),
             );
             const palette = prediction.mul(tf.scalar(255));
+
             palette.array().then((p) => {
               setColors([
                 color.rgb,
