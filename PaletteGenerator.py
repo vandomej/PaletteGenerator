@@ -4,16 +4,16 @@ import matplotlib.pyplot as plt
 import numpy as py
 
 import tensorflow as tf
-import pandas as pd
-import seaborn as sns
-
 from tensorflow import keras
 from tensorflow.keras import layers
-
 import tensorflow_docs as tfdocs
 import tensorflow_docs.plots
 import tensorflow_docs.modeling
 
+import pandas as pd
+import seaborn as sns
+
+# Opening the dataset and formatting the json data
 with open('data.json', 'r') as file:
     file_data = file.read()
 
@@ -24,7 +24,6 @@ json_data = [row[0:4] for row in json_data if len(row) >= 4]
 
 input_json = []
 for jd in json_data:
-
     input_json.append(
         {
             "primaryr":       jd[0]['r'],
@@ -41,13 +40,11 @@ for jd in json_data:
             "quaternaryb":    jd[3]['b']
         }
     )
-
 # print(json.dumps(input_json))
 
+# Reading the Dataset from the json
 raw_dataset = pd.read_json(json.dumps(input_json), orient='records')
-
 dataset = raw_dataset.copy()
-
 # print(dataset.tail())
 
 train_dataset = dataset.sample(frac=0.8, random_state=0)
