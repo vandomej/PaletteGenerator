@@ -1,0 +1,46 @@
+html {
+  background-color: #1d1d1d;
+  color: #ffffff;
+  padding: 3% 15%;
+}
+
+.colors {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+}
+
+.color-picker {
+  width: 50%;
+  min-width: 50%;
+  max-width: 50%;
+}
+
+.color-grid {
+  display: flex;
+  flex-direction: column;
+  width: 50%;
+  min-width: 50%;
+  max-width: 50%;
+}
+
+.color-grid-row {
+  display: flex;
+  flex-direction: row;
+}
+
+.color-primary {
+  margin: 2em 0.1em 0.1em 2em;
+}
+
+.color-secondary {
+  margin: 2em 2em 0.1em 0.1em;
+}
+
+.color-tertiary {
+  margin: 0.1em 0.1em 2em 2em;
+}
+
+.color-quaternary {
+  margin: 0.1em 2em 2em 0.1em;
+}

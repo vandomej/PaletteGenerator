@@ -21,10 +21,10 @@ const ColorPicker: React.FC<{}> = () => {
 
   const [model, setModel] = useState(null);
   const [colors, setColors] = useState([
-    { r: 200, g: 0, b: 100 },
-    { r: 200, g: 0, b: 100 },
-    { r: 200, g: 0, b: 100 },
-    { r: 200, g: 0, b: 100 },
+    { r: 0, g: 0, b: 0 },
+    { r: 0, g: 0, b: 0 },
+    { r: 0, g: 0, b: 0 },
+    { r: 0, g: 0, b: 0 },
   ]);
 
   useEffect(() => {
@@ -43,8 +43,9 @@ const ColorPicker: React.FC<{}> = () => {
   //   console.log(`colors: ${colors[0].r} ${colors[0].g} ${colors[0].b}`);
 
   return (
-    <div>
+    <div className="colors">
       <ChromePicker
+        className="color-picker"
         disableAlpha={true}
         color={colors[0]}
         onChange={(color, event) => {
@@ -69,10 +70,36 @@ const ColorPicker: React.FC<{}> = () => {
           }
         }}
       />
-      <BlockPicker colors={[]} triangle="hide" color={colors[0]} />
-      <BlockPicker colors={[]} triangle="hide" color={colors[1]} />
-      <BlockPicker colors={[]} triangle="hide" color={colors[2]} />
-      <BlockPicker colors={[]} triangle="hide" color={colors[3]} />
+      <div className="color-grid">
+        <div className="color-grid-row">
+          <BlockPicker
+            className="color-primary"
+            colors={[]}
+            triangle="hide"
+            color={colors[0]}
+          />
+          <BlockPicker
+            className="color-secondary"
+            colors={[]}
+            triangle="hide"
+            color={colors[1]}
+          />
+        </div>
+        <div className="color-grid-row">
+          <BlockPicker
+            className="color-tertiary"
+            colors={[]}
+            triangle="hide"
+            color={colors[2]}
+          />
+          <BlockPicker
+            className="color-quaternary"
+            colors={[]}
+            triangle="hide"
+            color={colors[3]}
+          />
+        </div>
+      </div>
     </div>
   );
 };
