@@ -31,10 +31,12 @@
     "@types/react-color": "^3.0.4",
     "gatsby": "^2.22.5",
     "gatsby-source-filesystem": "^2.3.18",
+    "lato-font": "^3.0.0",
     "react": "^16.13.1",
     "react-color": "^2.18.1",
     "react-dom": "^16.13.1",
-    "tsconfig-paths-webpack-plugin": "^3.2.0"
+    "tsconfig-paths-webpack-plugin": "^3.2.0",
+    "typeface-montserrat": "0.0.75"
   },
   "devDependencies": {
     "@commitlint/cli": "^8.3.5",

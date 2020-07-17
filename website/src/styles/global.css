@@ -1,7 +1,22 @@
 html {
-  background-color: #f9f9f9;
-  color: #000000;
+  background-color: #1d1d1d;
+  color: #ffffff;
   padding: 3% 15%;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.center {
+  text-align: center;
+}
+
+.title {
+  font-family: 'Lato', Regular;
+  font-weight: 300;
+  font-size: 5em;
+  letter-spacing: 0.1em;
+  margin: 0;
 }
 
 .colors {
@@ -22,25 +37,34 @@ html {
   width: 50%;
   min-width: 50%;
   max-width: 50%;
+  margin: 2em;
 }
 
 .color-grid-row {
   display: flex;
   flex-direction: row;
+  /* align-items: center; */
 }
 
+/* small = 37% */
+/* large=63% */
+
 .color-primary {
-  margin: 2em 0.1em 0.1em 2em;
+  /* margin: 2em 0.1em 0.1em 2em; */
+  /* width: 63%;
+  flex-grow: 1.68; */
 }
 
 .color-secondary {
-  margin: 2em 2em 0.1em 0.1em;
+  /* margin: 2em 2em 0.1em 0.1em; */
 }
 
 .color-tertiary {
-  margin: 0.1em 0.1em 2em 2em;
+  /* margin: 0.1em 0.1em 2em 2em; */
 }
 
 .color-quaternary {
-  margin: 0.1em 2em 2em 0.1em;
+  /* margin: 0.1em 2em 2em 0.1em; */
+  /* width: 37%; */
+  /* flex-grow: 0.53; */
 }
