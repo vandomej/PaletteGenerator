@@ -44,13 +44,12 @@ const ColorPicker: React.FC<{}> = () => {
 
   return (
     <div className="colors">
-      <div className="selector-area">
-        <p>Select a color and see what color palette gets generated from it.</p>
+      <div className="color-picker">
+        <p>Select a color</p>
         <ChromePicker
-          className="color-picker"
           disableAlpha={true}
           color={colors[0]}
-          width="300px"
+          // width="300px"
           onChange={(color, event) => {
             setColors([color.rgb, colors[1], colors[2], colors[3]]);
           }}
@@ -74,34 +73,37 @@ const ColorPicker: React.FC<{}> = () => {
           }}
         />
       </div>
-      <div className="color-grid">
-        <div className="color-grid-row">
-          <BlockPicker
-            className="color-primary"
-            colors={[]}
-            triangle="hide"
-            color={colors[0]}
-          />
-          <BlockPicker
-            className="color-secondary"
-            colors={[]}
-            triangle="hide"
-            color={colors[1]}
-          />
-        </div>
-        <div className="color-grid-row">
-          <BlockPicker
-            className="color-tertiary"
-            colors={[]}
-            triangle="hide"
-            color={colors[2]}
-          />
-          <BlockPicker
-            className="color-quaternary"
-            colors={[]}
-            triangle="hide"
-            color={colors[3]}
-          />
+      <div className="result-area">
+        <p>And see the resulting palette</p>
+        <div className="color-grid">
+          <div className="color-grid-row">
+            <BlockPicker
+              className="color-primary"
+              colors={[]}
+              triangle="hide"
+              color={colors[0]}
+            />
+            <BlockPicker
+              className="color-secondary"
+              colors={[]}
+              triangle="hide"
+              color={colors[1]}
+            />
+          </div>
+          <div className="color-grid-row">
+            <BlockPicker
+              className="color-tertiary"
+              colors={[]}
+              triangle="hide"
+              color={colors[2]}
+            />
+            <BlockPicker
+              className="color-quaternary"
+              colors={[]}
+              triangle="hide"
+              color={colors[3]}
+            />
+          </div>
         </div>
       </div>
     </div>
