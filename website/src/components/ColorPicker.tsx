@@ -21,10 +21,10 @@ const ColorPicker: React.FC<{}> = () => {
 
   const [model, setModel] = useState(null);
   const [colors, setColors] = useState([
-    { r: 0, g: 0, b: 0 },
-    { r: 0, g: 0, b: 0 },
-    { r: 0, g: 0, b: 0 },
-    { r: 0, g: 0, b: 0 },
+    { r: 50, g: 0, b: 100 },
+    { r: 100, g: 50, b: 0 },
+    { r: 0, g: 100, b: 50 },
+    { r: 100, g: 0, b: 50 },
   ]);
 
   useEffect(() => {
@@ -43,16 +43,14 @@ const ColorPicker: React.FC<{}> = () => {
   //   console.log(`colors: ${colors[0].r} ${colors[0].g} ${colors[0].b}`);
 
   return (
-    <div className="colors main-item">
+    <div className="colors">
       <div className="selector-area">
-        <p>
-          Select a color and see what color palette <br />
-          gets generated from it.
-        </p>
+        <p>Select a color and see what color palette gets generated from it.</p>
         <ChromePicker
           className="color-picker"
           disableAlpha={true}
           color={colors[0]}
+          width="300px"
           onChange={(color, event) => {
             setColors([color.rgb, colors[1], colors[2], colors[3]]);
           }}
