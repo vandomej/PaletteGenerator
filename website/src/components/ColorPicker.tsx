@@ -43,33 +43,39 @@ const ColorPicker: React.FC<{}> = () => {
   //   console.log(`colors: ${colors[0].r} ${colors[0].g} ${colors[0].b}`);
 
   return (
-    <div className="colors">
-      <ChromePicker
-        className="color-picker"
-        disableAlpha={true}
-        color={colors[0]}
-        onChange={(color, event) => {
-          setColors([color.rgb, colors[1], colors[2], colors[3]]);
-        }}
-        onChangeComplete={(color, event) => {
-          if (model) {
-            const normalized = [color.rgb.r, color.rgb.g, color.rgb.b];
-            const prediction = model.predict(
-              tf.tensor([normalized.map((i) => i / 255)]),
-            );
-            const palette = prediction.mul(tf.scalar(255));
+    <div className="colors main-item">
+      <div className="selector-area">
+        <p>
+          Select a color and see what color palette <br />
+          gets generated from it.
+        </p>
+        <ChromePicker
+          className="color-picker"
+          disableAlpha={true}
+          color={colors[0]}
+          onChange={(color, event) => {
+            setColors([color.rgb, colors[1], colors[2], colors[3]]);
+          }}
+          onChangeComplete={(color, event) => {
+            if (model) {
+              const normalized = [color.rgb.r, color.rgb.g, color.rgb.b];
+              const prediction = model.predict(
+                tf.tensor([normalized.map((i) => i / 255)]),
+              );
+              const palette = prediction.mul(tf.scalar(255));
 
-            palette.array().then((p) => {
-              setColors([
-                color.rgb,
-                { r: p[0][0], g: p[0][1], b: p[0][2] },
-                { r: p[0][3], g: p[0][4], b: p[0][5] },
-                { r: p[0][6], g: p[0][7], b: p[0][8] },
-              ]);
-            });
-          }
-        }}
-      />
+              palette.array().then((p) => {
+                setColors([
+                  color.rgb,
+                  { r: p[0][0], g: p[0][1], b: p[0][2] },
+                  { r: p[0][3], g: p[0][4], b: p[0][5] },
+                  { r: p[0][6], g: p[0][7], b: p[0][8] },
+                ]);
+              });
+            }
+          }}
+        />
+      </div>
       <div className="color-grid">
         <div className="color-grid-row">
           <BlockPicker
