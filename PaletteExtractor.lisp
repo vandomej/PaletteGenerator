@@ -10,7 +10,7 @@
 
 ;; The difference tolerance is the maximum difference allowed between two pixels in rgb value for 
 ;; them to be grouped together
-(defconstant +difference-tolerance+ 200)
+(defconstant +difference-tolerance+ 100)
 (defconstant +number-of-threads+ 8)
 (defconstant +image-directory+ "./images/")
 (defconstant +palette-directory+ "./palettes/")
@@ -145,7 +145,6 @@
                         (declare (type opticl:8-bit-rgb-image img))
                         (opticl:with-image-bounds (height width) img 
                         (loop for i below height
-                            ;; do (dotimes (j width t)
                             do (loop for j below width 
                                 do (multiple-value-bind (r g b) (opticl:pixel img i j)
                                     (declare (type (unsigned-byte 8) r g b))
@@ -188,8 +187,7 @@
         (loop for file-name in *image-files*
             do (setf *threads* 
                 (push-thread 
-                    (bt:make-thread 
-                        (lambda () (extract-palette file-name))) 
+                    (bt:make-thread (lambda () (extract-palette file-name))) 
                     *threads*)))
         (loop for thread in *threads*
             do (bt:join-thread thread))
