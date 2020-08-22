@@ -55,10 +55,10 @@ const ColorPicker: React.FC<{}> = () => {
           }}
           onChangeComplete={(color, event) => {
             if (model) {
-              const normalized = [color.rgb.r, color.rgb.g, color.rgb.b];
-              const prediction = model.predict(
-                tf.tensor([normalized.map((i) => i / 255)]),
+              const input = tf.tensor(
+                [color.rgb.r, color.rgb.g, color.rgb.b].map((i) => i / 255),
               );
+              const prediction = model.predict(input);
               const palette = prediction.mul(tf.scalar(255));
 
               palette.array().then((p) => {
