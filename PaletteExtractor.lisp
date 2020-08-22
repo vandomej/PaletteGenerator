@@ -4,10 +4,13 @@
 (ql:quickload :opticl)
 (ql:quickload :bordeaux-threads)
 (ql:quickload :cl-json)
+(ql:quickload :iterate)
+
+(use-package :iterate)
 
 ;; The difference tolerance is the maximum difference allowed between two pixels in rgb value for 
 ;; them to be grouped together
-(defconstant +difference-tolerance+ 200)
+(defconstant +difference-tolerance+ 100)
 (defconstant +number-of-threads+ 8)
 (defconstant +image-directory+ "./images/")
 (defconstant +palette-directory+ "./palettes/")
@@ -18,6 +21,8 @@
 (defparameter *threads* (list))
 (defparameter *palette-dataset* (list))
 
+;; We need a color-average class to represent a running average of a color extracted from an image.
+;; This is also used to help the json encoder library extract values into json.
 (defclass color-average ()
     ((r
         :initarg :r
@@ -32,6 +37,7 @@
         :initarg :count
         :initform 1)))
 
+;;Defining an output for the object.
 (defmethod print-object ((object color-average) stream)
     (format stream "(r:~A g:~A b:~A | ~A)"
         (slot-value object 'r)
@@ -39,6 +45,7 @@
         (slot-value object 'b)
         (slot-value object 'count)))
 
+;;Defining the encode-json method so the encoder can write the color palette results to a file.
 (defmethod json:encode-json ((object color-average) &optional stream)
     (json:with-object (stream)
         (json:encode-object-member "r" (slot-value object 'r) stream)
@@ -46,23 +53,22 @@
         (json:encode-object-member "b" (slot-value object 'b) stream)
         (json:encode-object-member "count" (slot-value object 'count) stream)))
 
-;; (defparameter *test* (list
-;;     (list (make-instance 'color-average :r 10.0 :g 9.0 :b 8.0 :count 10)
-;;         (make-instance 'color-average :r 7.5 :g 6.3 :b 243.76 :count 4)
-;;         (make-instance 'color-average :r 11.0 :g 11.0 :b 11.0 :count 17))
-;;     (list (make-instance 'color-average :r 1.0 :g 7.0 :b 13.0 :count 1)
-;;         (make-instance 'color-average :r 2.0 :g 8.0 :b 14.0 :count 2)
-;;         (make-instance 'color-average :r 3.0 :g 9.0 :b 15.0 :count 3))
-;;     (list (make-instance 'color-average :r 4.0 :g 10.0 :b 16.0 :count 4)
-;;         (make-instance 'color-average :r 5.0 :g 11.0 :b 17.0 :count 5)
-;;         (make-instance 'color-average :r 6.0 :g 12.0 :b 18.0 :count 6))))
+(defun recalculate-average (average new slot)
+    (/ 
+        (+ (slot-value new slot) (* (slot-value average slot) (slot-value average 'count)))
+        (1+ (slot-value average 'count))))
 
-;; Defining currying for later use
-(declaim (ftype (function (function &rest t) function) curry)
-    (inline curry))
-(defun curry (function &rest args)
-    (lambda (&rest more-args)
-      (apply function (append args more-args))))
+;; Test data
+;; (defparameter *test* (list
+;;     (make-instance 'color-average :r 10.0 :g 9.0 :b 8.0 :count 10)
+;;     (make-instance 'color-average :r 7.5 :g 6.3 :b 243.76 :count 4)
+;;     (make-instance 'color-average :r 11.0 :g 11.0 :b 11.0 :count 17)
+;;     (make-instance 'color-average :r 1.0 :g 7.0 :b 13.0 :count 1)
+;;     (make-instance 'color-average :r 2.0 :g 8.0 :b 14.0 :count 2)
+;;     (make-instance 'color-average :r 3.0 :g 9.0 :b 15.0 :count 3)
+;;     (make-instance 'color-average :r 4.0 :g 10.0 :b 16.0 :count 4)
+;;     (make-instance 'color-average :r 5.0 :g 11.0 :b 17.0 :count 5)
+;;     (make-instance 'color-average :r 6.0 :g 12.0 :b 18.0 :count 6)))
 
 ;; Function that gets the absolute value of the difference between 2 values. This is used as a 
 ;; shortcut to map the difference between two lists.
@@ -78,34 +84,21 @@
 (defun closest (value l)
     ;; (format t "~A => ~A~%" value l)
     (if value
-        (let ((closest-val) (closest-difference))
-            (loop for i in l
-                do 
-                ;; (format t "i: ~A~%" i)
-                (let ((temp-difference (difference value i)))
-                    (cond ((or (not closest-val)
-                            (< temp-difference closest-difference)) 
-                                (setf closest-val i)
-                                (setf closest-difference temp-difference)))))
-            closest-val)))
+        (iter (for i in l)
+            (finding i minimizing (difference value i)))))
+
 
 ;; Apply's {current-pixel} to the running average given by {average-color}. We need to keep
 ;; a running average for entries in order to keep the algorithm efficient.
 (defun change-running-average (current-pixel average-color)
     (if (and current-pixel average-color)
         (block nil
-            (setf (slot-value average-color 'r)
-                (/ (+ (slot-value current-pixel 'r) 
-                        (* (slot-value average-color 'r) (slot-value average-color 'count)))
-                    (1+ (slot-value average-color 'count))))
-            (setf (slot-value average-color 'g)
-                (/ (+ (slot-value current-pixel 'g) 
-                        (* (slot-value average-color 'g) (slot-value average-color 'count)))
-                    (1+ (slot-value average-color 'count))))
-            (setf (slot-value average-color 'b)
-                (/ (+ (slot-value current-pixel 'b) 
-                        (* (slot-value average-color 'b) (slot-value average-color 'count)))
-                    (1+ (slot-value average-color 'count))))
+            (setf (slot-value average-color 'r) 
+                (recalculate-average average-color current-pixel 'r))
+            (setf (slot-value average-color 'g) 
+                (recalculate-average average-color current-pixel 'g))
+            (setf (slot-value average-color 'b) 
+                (recalculate-average average-color current-pixel 'b))
             (incf (slot-value average-color 'count)))))
 
 ;; Processes a pixel by determining where it matches in palette-average and changing palette-average.
@@ -152,7 +145,6 @@
                         (declare (type opticl:8-bit-rgb-image img))
                         (opticl:with-image-bounds (height width) img 
                         (loop for i below height
-                            ;; do (dotimes (j width t)
                             do (loop for j below width 
                                 do (multiple-value-bind (r g b) (opticl:pixel img i j)
                                     (declare (type (unsigned-byte 8) r g b))
@@ -195,8 +187,7 @@
         (loop for file-name in *image-files*
             do (setf *threads* 
                 (push-thread 
-                    (bt:make-thread 
-                        (lambda () (extract-palette file-name))) 
+                    (bt:make-thread (lambda () (extract-palette file-name))) 
                     *threads*)))
         (loop for thread in *threads*
             do (bt:join-thread thread))
@@ -204,3 +195,5 @@
         (let ((output-file (open +output-file+ :direction :output :if-exists :supersede)))
             (json:encode-json *palette-dataset* output-file)
             (close output-file))))
+
+;; (defparameter *closest* (make-instance 'color-average :r 5 :g 9 :b 15))
