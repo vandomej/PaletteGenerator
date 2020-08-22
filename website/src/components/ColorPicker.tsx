@@ -10,8 +10,6 @@ const ColorPicker: React.FC<{}> = () => {
       allFile(filter: { name: { eq: "model" } }) {
         edges {
           node {
-            name
-            publicURL
             relativePath
           }
         }
@@ -21,26 +19,22 @@ const ColorPicker: React.FC<{}> = () => {
 
   const [model, setModel] = useState(null);
   const [colors, setColors] = useState([
-    { r: 50, g: 0, b: 100 },
-    { r: 100, g: 50, b: 0 },
-    { r: 0, g: 100, b: 50 },
-    { r: 100, g: 0, b: 50 },
+    { r: 104, g: 85, b: 170 },
+    { r: 132, g: 76, b: 165 },
+    { r: 247, g: 246, b: 107 },
+    { r: 247, g: 222, b: 107 },
   ]);
 
+  //Loading the machine learning model using tensorflowjs from the website.
   useEffect(() => {
     if (!model) {
       tf.loadLayersModel(modelFile.allFile.edges[0].node.relativePath)
         .then((m) => {
-          console.log('Setting model ');
           setModel(m);
-          //   const prediction = m.predict(tf.tensor([[0.75, 0.5, 0.25]]));
-          //   (prediction as tf.Tensor).print();
         })
         .catch((e) => console.log(e));
     }
   });
-
-  //   console.log(`colors: ${colors[0].r} ${colors[0].g} ${colors[0].b}`);
 
   return (
     <div className="colors">
@@ -49,11 +43,10 @@ const ColorPicker: React.FC<{}> = () => {
         <ChromePicker
           disableAlpha={true}
           color={colors[0]}
-          // width="300px"
-          onChange={(color, event) => {
+          onChange={(color) => {
             setColors([color.rgb, colors[1], colors[2], colors[3]]);
           }}
-          onChangeComplete={(color, event) => {
+          onChangeComplete={(color) => {
             if (model) {
               const input = tf.tensor(
                 [color.rgb.r, color.rgb.g, color.rgb.b].map((i) => i / 255),

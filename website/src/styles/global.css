@@ -22,10 +22,6 @@ body {
   display: none;
 }
 
-/* .chrome-picker > div:nth-of-type(2) > div:nth-of-type(2) {
-  display: none !important;
-} */
-
 .main {
   display: flex;
   flex-direction: column;
@@ -114,7 +110,6 @@ body {
   flex-direction: column;
   align-items: center;
   padding: 2em;
-  /* width: 30em; */
 }
 
 .color-grid {
@@ -127,25 +122,33 @@ body {
 .color-grid-row {
   display: flex;
   flex-direction: row;
-  /* align-items: center; */
 }
 
-.color-primary {
-  /* margin: 2em 0.1em 0.1em 2em; */
-  /* width: 63%;
-  flex-grow: 1.68; */
+/* .color-primary {
+  
 }
 
 .color-secondary {
-  /* margin: 2em 2em 0.1em 0.1em; */
+  
 }
 
 .color-tertiary {
-  /* margin: 0.1em 0.1em 2em 2em; */
+  
 }
 
 .color-quaternary {
-  /* margin: 0.1em 2em 2em 0.1em; */
-  /* width: 37%; */
-  /* flex-grow: 0.53; */
+  
+} */
+
+.not-found {
+  display: flex;
+  flex-direction: column;
+  justify-items: center;
+  align-items: center;
+  padding: 3% 0;
+  max-width: 100%;
+  width: 100%;
+  font-size: 5em;
+  font-weight: 200;
+  font-family: 'Lato', Regular;
 }

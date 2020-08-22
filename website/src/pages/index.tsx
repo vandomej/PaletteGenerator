@@ -11,8 +11,12 @@ const Home: React.FC<PageProps> = () => {
       </div>
       <div className="divider" />
       <p className="explanation">
-        A color palette generator machine learning model trained from palettes
-        from some of the most renowned artists of all time.
+        A machine learning model that generates a color palette, trained on the
+        following{' '}
+        <a href="https://www.kaggle.com/ikarus777/best-artworks-of-all-time">
+          dataset
+        </a>
+        .
       </p>
       <ColorPicker />
     </main>
