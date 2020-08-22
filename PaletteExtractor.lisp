@@ -53,6 +53,11 @@
         (json:encode-object-member "b" (slot-value object 'b) stream)
         (json:encode-object-member "count" (slot-value object 'count) stream)))
 
+(defun recalculate-average (average new slot)
+    (/ 
+        (+ (slot-value new slot) (* (slot-value average slot) (slot-value average 'count)))
+        (1+ (slot-value average 'count))))
+
 ;; Test data
 ;; (defparameter *test* (list
 ;;     (make-instance 'color-average :r 10.0 :g 9.0 :b 8.0 :count 10)
@@ -88,18 +93,12 @@
 (defun change-running-average (current-pixel average-color)
     (if (and current-pixel average-color)
         (block nil
-            (setf (slot-value average-color 'r)
-                (/ (+ (slot-value current-pixel 'r) 
-                        (* (slot-value average-color 'r) (slot-value average-color 'count)))
-                    (1+ (slot-value average-color 'count))))
-            (setf (slot-value average-color 'g)
-                (/ (+ (slot-value current-pixel 'g) 
-                        (* (slot-value average-color 'g) (slot-value average-color 'count)))
-                    (1+ (slot-value average-color 'count))))
-            (setf (slot-value average-color 'b)
-                (/ (+ (slot-value current-pixel 'b) 
-                        (* (slot-value average-color 'b) (slot-value average-color 'count)))
-                    (1+ (slot-value average-color 'count))))
+            (setf (slot-value average-color 'r) 
+                (recalculate-average average-color current-pixel 'r))
+            (setf (slot-value average-color 'g) 
+                (recalculate-average average-color current-pixel 'g))
+            (setf (slot-value average-color 'b) 
+                (recalculate-average average-color current-pixel 'b))
             (incf (slot-value average-color 'count)))))
 
 ;; Processes a pixel by determining where it matches in palette-average and changing palette-average.
