@@ -45,7 +45,7 @@ for jd in json_data:
 # Reading the Dataset from the json
 raw_dataset = pd.read_json(json.dumps(input_json), orient='records')
 dataset = raw_dataset.copy()
-# print(dataset.tail())
+print(dataset.tail())
 
 train_dataset = dataset.sample(frac=0.8, random_state=0)
 test_dataset = dataset.drop(train_dataset.index)
@@ -64,7 +64,7 @@ train_label_stats = train_label_stats.drop(
     labels=['primaryr', 'primaryg', 'primaryb'], axis='columns')
 train_label_stats = train_label_stats.transpose()
 
-# print(train_label_stats)
+print(train_label_stats)
 
 train_labels = train_dataset.drop(
     labels=['primaryr', 'primaryg', 'primaryb'], axis='columns')
@@ -76,8 +76,8 @@ test_labels = test_dataset.drop(
 test_dataset = test_dataset.drop(
     labels=['secondaryr', 'secondaryg', 'secondaryb', 'tertiaryr', 'tertiaryg', 'tertiaryb', 'quaternaryr', 'quaternaryg', 'quaternaryb'], axis='columns')
 
-# print(test_labels.tail())
-# print(test_dataset.tail())
+print(test_labels.tail())
+print(test_dataset.tail())
 
 
 def norm_data(x):
@@ -128,8 +128,7 @@ def build_model():
     model = keras.Sequential([
         layers.Dense(24, activation='relu', input_shape=[
                      len(train_dataset.keys())], use_bias=True),
-        layers.Dense(10, use_bias=True),
-        layers.Dense(10, use_bias=True),
+        layers.Dense(24, use_bias=True),
         layers.Dense(len(train_labels.keys()), use_bias=True)
     ])
 
@@ -166,7 +165,7 @@ cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
                                                  monitor='val_mape',
                                                  save_freq='epoch')
 
-EPOCHS = 400
+EPOCHS = 1000
 
 history = model.fit(
     normed_train_data, normed_train_labels,
@@ -175,7 +174,7 @@ history = model.fit(
     shuffle=True,
     callbacks=[
         tfdocs.modeling.EpochDots(),
-        tf.keras.callbacks.EarlyStopping(monitor='val_mape', patience=100),
+        tf.keras.callbacks.EarlyStopping(monitor='val_mape', patience=500),
         cp_callback
     ])
 
@@ -185,7 +184,7 @@ print(hist.tail())
 
 plotter = tfdocs.plots.HistoryPlotter(smoothing_std=2)
 plotter.plot({'Basic': history}, metric="mae")
-plt.ylim([0.15, 0.18])
+plt.ylim([0.17, 0.3])
 plt.ylabel('MAE [RGB]')
 plt.savefig("results.png")
 

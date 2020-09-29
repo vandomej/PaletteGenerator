@@ -53,10 +53,38 @@
         (json:encode-object-member "b" (slot-value object 'b) stream)
         (json:encode-object-member "count" (slot-value object 'count) stream)))
 
-(defun recalculate-average (average new slot)
-    (/ 
-        (+ (slot-value new slot) (* (slot-value average slot) (slot-value average 'count)))
-        (1+ (slot-value average 'count))))
+(defun combine-average (p1 p2)
+    (setf (slot-value p1 'r)
+        (/ 
+            (+ 
+                (* (slot-value p2 'r) (slot-value p2 'count)) 
+                (* (slot-value p1 'r) (slot-value p1 'count)))
+            (+ (slot-value p1 'count) (slot-value p2 'count))))
+    (setf (slot-value p1 'g)
+        (/ 
+            (+ 
+                (* (slot-value p2 'g) (slot-value p2 'count)) 
+                (* (slot-value p1 'g) (slot-value p1 'count)))
+            (+ (slot-value p1 'count) (slot-value p2 'count))))
+    (setf (slot-value p1 'b)
+        (/ 
+            (+ 
+                (* (slot-value p2 'b) (slot-value p2 'count)) 
+                (* (slot-value p1 'b) (slot-value p1 'count)))
+            (+ (slot-value p1 'count) (slot-value p2 'count))))
+    (setf (slot-value p1 'count) (+ (slot-value p1 'count) (slot-value p2 'count))))
+
+(defun take-percent (palette percent)
+    (let* ((result (list))
+          (total (reduce #'+ (mapcar (lambda (i) (slot-value i 'count)) palette)))
+          (threshold (* total percent))
+          (sum 0))
+        (loop for i in palette
+              while (< sum threshold)
+            do (push i result)
+            (setf sum (+ sum (slot-value i 'count))))
+        result))
+    
 
 ;; Test data
 ;; (defparameter *test* (list
@@ -92,14 +120,7 @@
 ;; a running average for entries in order to keep the algorithm efficient.
 (defun change-running-average (current-pixel average-color)
     (if (and current-pixel average-color)
-        (block nil
-            (setf (slot-value average-color 'r) 
-                (recalculate-average average-color current-pixel 'r))
-            (setf (slot-value average-color 'g) 
-                (recalculate-average average-color current-pixel 'g))
-            (setf (slot-value average-color 'b) 
-                (recalculate-average average-color current-pixel 'b))
-            (incf (slot-value average-color 'count)))))
+        (combine-average average-color current-pixel)))
 
 ;; Processes a pixel by determining where it matches in palette-average and changing palette-average.
 (defun process-pixel (current-pixel palette-average)
@@ -133,11 +154,38 @@
                             (incf j))))))
     (opticl:write-jpeg-file filename img))
 
+
+(defun reduce-palette (palette new-size)
+    (let ((temp-palette (copy-list palette)))
+        (loop while (> (length temp-palette) new-size)
+            do (let ((closest-difference nil)
+                     (node1 nil)
+                     (node2 nil))
+                    (loop for i in temp-palette
+                        do (loop for j in temp-palette
+                            do (if (not (equal i j))
+                                (if closest-difference
+                                    (if (< (difference i j) closest-difference)
+                                        (block nil
+                                            (setf closest-difference (difference i j))
+                                            (setf node1 i)
+                                            (setf node2 j)))
+                                    (block nil
+                                        (setf closest-difference (difference i j))
+                                        (setf node1 i)
+                                        (setf node2 j))))))
+                    (combine-average node1 node2)
+                    (setf temp-palette (remove node2 temp-palette))
+                    ;; (format t "~A - ~A~%~%" temp-palette (length temp-palette))
+                    ))
+        temp-palette))
+
 ;; Given a file name, the function will extract the color palette, and generate an image to the "palettes" folder
 (defun extract-palette (file-name)
     (let ((palette-name (format nil "~A~A" +palette-directory+ (file-namestring file-name))))
         (format t "~A -> ~A~%" file-name palette-name)
-        (ignore-errors (time (let ((img (opticl:read-jpeg-file file-name))
+        (ignore-errors 
+            (time (let ((img (opticl:read-jpeg-file file-name))
             (palette-average (list)))
             (typecase img
                 (opticl:8-bit-rgb-image
@@ -152,8 +200,13 @@
                                     (setf palette-average (process-pixel (make-instance 'color-average :r r :g g :b b) palette-average)))))
                         ;; (format t "~A: ~A~%~%" palette-average (length palette-average))
                         (let ((sorted-palette-average (sort palette-average #'> :key (lambda (pa) (slot-value pa 'count)))))
-                            (push sorted-palette-average *palette-dataset*)
-                            (write-palette-results img palette-name sorted-palette-average)))))))))))
+                            (write-palette-results img (format nil "~A.reduced.jpg" palette-name) sorted-palette-average)
+                            ;; (format t "~A~%~%" sorted-palette-average)
+                            (let* ((reduced-palette (reduce-palette (take-percent sorted-palette-average 0.9) 4))
+                                   (sorted-reduced-palette (sort reduced-palette #'> :key (lambda (rp) (slot-value rp 'count)))))
+                                ;; (format t "~A~%~%" sorted-reduced-palette)
+                                (push sorted-reduced-palette *palette-dataset*)
+                                (write-palette-results img palette-name sorted-reduced-palette))))))))))))
 
 ;; Pushes {thread} onto {thread-list} up to {+number-of-threads+}. If {thread-list} has {+number-of-threads+} elements
 ;; the function will pop the last element off of the list, waiting for the thread to finish, before pushing the thread.
