@@ -41,7 +41,7 @@ seaborn==0.10.1
 six==1.15.0
 tensorboard==2.2.2
 tensorboard-plugin-wit==1.6.0.post3
-tensorflow==2.5.1
+tensorflow==2.5.3
 tensorflow-cpu==2.5.1
 tensorflow-docs @ git+https://github.com/tensorflow/docs@a9f3c152e245bc5aadc4b9f175a36b7e5bf26cce
 tensorflow-estimator==2.2.0
